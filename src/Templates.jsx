@@ -81,8 +81,8 @@ function Templates() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0f172a] text-white p-6">
-      <h1 className="text-3xl font-bold text-green-400 mb-6 text-center">
+    <div className="min-h-screen bg-[#0f172a] text-white px-4 py-10">
+      <h1 className="text-4xl font-extrabold text-green-400 text-center mb-10">
         🎨 Ready-Made Templates
       </h1>
 
@@ -90,13 +90,13 @@ function Templates() {
         {templates.map((t, i) => (
           <div
             key={i}
-            className="bg-[#1e293b] border border-gray-600 p-5 rounded-xl shadow-md hover:shadow-xl transition"
+            className="bg-[#1e293b] p-6 rounded-2xl border border-gray-700 shadow-md hover:shadow-xl transition-all duration-200 transform hover:-translate-y-1"
           >
-            <h2 className="text-xl font-semibold mb-2">{t.name}</h2>
-            <p className="text-sm text-gray-300 mb-4">{t.description}</p>
+            <h2 className="text-xl font-bold mb-2">{t.name}</h2>
+            <p className="text-sm text-gray-300 mb-5">{t.description}</p>
             <button
               onClick={() => applyTemplate(t.config)}
-              className="bg-green-500 hover:bg-green-600 px-4 py-2 rounded text-white font-semibold"
+              className="w-full bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-lime-500 py-2 rounded-lg text-white font-semibold shadow"
             >
               Use Template →
             </button>

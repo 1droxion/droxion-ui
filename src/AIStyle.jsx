@@ -2,75 +2,107 @@ import React, { useState } from "react";
 import axios from "axios";
 
 function AIStyle() {
-  const [image, setImage] = useState(null);
+  const [file, setFile] = useState(null);
   const [style, setStyle] = useState("Ghibli");
-  const [result, setResult] = useState(null);
+  const [outputUrl, setOutputUrl] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => setImage(reader.result);
-      reader.readAsDataURL(file);
-    }
+  const stylePrompts = {
+    Ghibli: "In Ghibli anime style",
+    Sketch: "Make this image look like a pencil sketch",
+    "3D": "Convert to 3D cartoon style",
+    Cartoon: "Make this look like a cartoon character",
+    Pixel: "Turn this image into pixel art",
   };
 
-  const transformImage = async () => {
-    if (!image) return alert("Please upload an image.");
+  const handleUpload = async () => {
+    if (!file) return alert("Please upload an image first.");
     setLoading(true);
+    setOutputUrl("");
+
     try {
-      const res = await axios.post("http://localhost:5000/transform", {
-        image,
-        style,
+      // 1. Upload image to backend
+      const uploadForm = new FormData();
+      uploadForm.append("image", file);
+
+      const uploadRes = await axios.post(
+        "http://localhost:5000/upload-image",
+        uploadForm,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
+
+      const imageUrl = uploadRes.data.image_url;
+
+      // 2. Trigger AI style generation using image URL + style
+      const res = await axios.post("http://localhost:5000/ai-style", {
+        imageUrl: imageUrl,
+        style: style,
       });
-      setResult(res.data.result);
+
+      setOutputUrl(res.data.styledUrl);
     } catch (err) {
-      alert("Error transforming image.");
-      console.error(err);
+      console.error("❌ AI Style Error:", err.response?.data || err.message);
+      alert("❌ Failed to style image.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="p-6 text-white">
-      <h1 className="text-2xl font-bold mb-4">🖼️ AI Style Transformer</h1>
+    <div className="p-6 text-white h-[calc(100vh-80px)]">
+      <h1 className="text-2xl font-bold text-blue-400 mb-6">
+        🎨 AI Style Transformer
+      </h1>
 
-      <div className="flex flex-col md:flex-row gap-4 items-center">
-        <input type="file" accept="image/*" onChange={handleUpload} />
-        <select
-          value={style}
-          onChange={(e) => setStyle(e.target.value)}
-          className="p-2 rounded text-black"
-        >
-          <option value="Ghibli">Ghibli</option>
-          <option value="Cartoon">Cartoon</option>
-          <option value="Pixel">Pixel</option>
-          <option value="Fantasy">Fantasy</option>
-        </select>
-        <button
-          onClick={transformImage}
-          className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
-        >
-          🎨 Transform
-        </button>
-      </div>
+      <div className="flex flex-col md:flex-row gap-6">
+        <div className="flex flex-col gap-4 w-full md:w-1/2">
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setFile(e.target.files[0])}
+            className="text-white"
+          />
 
-      {loading && <p className="mt-4 text-yellow-400">Processing...</p>}
-
-      {result && (
-        <div className="mt-6">
-          <img src={result} alt="Styled Output" className="max-w-full rounded" />
-          <a
-            href={result}
-            download="styled_image.png"
-            className="block mt-2 text-blue-400 underline"
+          <select
+            value={style}
+            onChange={(e) => setStyle(e.target.value)}
+            className="p-2 rounded text-black"
           >
-            ⬇️ Download
-          </a>
+            {Object.keys(stylePrompts).map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+
+          <button
+            onClick={handleUpload}
+            disabled={loading}
+            className="bg-green-500 px-4 py-2 rounded hover:bg-green-600"
+          >
+            {loading ? "Styling..." : "🎨 Convert"}
+          </button>
         </div>
-      )}
+
+        {outputUrl && (
+          <div className="w-full md:w-1/2">
+            <img
+              src={outputUrl}
+              alt="Styled"
+              className="w-full rounded border mt-4"
+            />
+            <a
+              href={outputUrl}
+              download="styled_output.png"
+              className="block mt-3 bg-blue-600 p-2 rounded text-center"
+            >
+              ⬇️ Download Image
+            </a>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

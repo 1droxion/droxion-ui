@@ -1,63 +1,65 @@
-import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import React from "react";
+import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import { SidebarProvider } from "./context/SidebarContext";
+import { AnimatePresence } from "framer-motion";
+
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
+
+// Pages
+import Home from "./Home"; // ✅ Your landing page
+import Landing from "./Landing"; // Optional internal page
 import Dashboard from "./Dashboard";
-import Projects from "./Projects";
-import Analytics from "./Analytics";
-import Settings from "./Settings";
-import Editor from "./Editor";
-import Plans from "./Plans";
-import Templates from "./Templates";
-import Connect from "./Connect";
-import { Privacy, Terms, Support } from "./StaticPages";
-import Login from "./Login";
-import Signup from "./Signup";
-import Profile from "./Profile";
+import Generator from "./Generator";
+import AutoGenerator from "./AutoGenerator";
 import AIChat from "./AIChat";
 import AIImage from "./AIImage";
-import AIStyle from "./AIStyle";
-import ProtectedRoute from "./ProtectedRoute";
-import Generator from "./Generator";
+import Gallery from "./Gallery"; // ✅ NEW
+import Plans from "./Plans";
+import Projects from "./Projects";
+import Templates from "./Templates";
+import Connect from "./Connect";
+import Editor from "./Editor";
+import Profile from "./Profile";
+import Settings from "./Settings";
 
-function App() {
-  const [darkMode, setDarkMode] = useState(true);
+function AnimatedRoutes() {
+  const location = useLocation();
 
   return (
-    <Router>
-      <div className={`min-h-screen flex ${darkMode ? "bg-black text-white" : "bg-white text-black"}`}>
-        <Sidebar />
-        <div className="flex flex-col flex-grow ml-56">
-          <Topbar darkMode={darkMode} setDarkMode={setDarkMode} />
-          <div className="pt-20 p-6">
-            <Routes>
-              {/* 🔐 Protected Routes */}
-              <Route path="/" element={<ProtectedRoute><Generator /></ProtectedRoute>} />
-              <Route path="/generator" element={<ProtectedRoute><Generator /></ProtectedRoute>} />
-              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-              <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
-              <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
-              <Route path="/editor" element={<ProtectedRoute><Editor /></ProtectedRoute>} />
-              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-              <Route path="/plans" element={<ProtectedRoute><Plans /></ProtectedRoute>} />
-              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-              <Route path="/chat" element={<ProtectedRoute><AIChat /></ProtectedRoute>} />
-              <Route path="/ai-image" element={<ProtectedRoute><AIImage /></ProtectedRoute>} />
-              <Route path="/ai-style" element={<ProtectedRoute><AIStyle /></ProtectedRoute>} />
-              <Route path="/templates" element={<ProtectedRoute><Templates /></ProtectedRoute>} />
-              <Route path="/connect" element={<ProtectedRoute><Connect /></ProtectedRoute>} />
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        <Route path="/" element={<Home />} /> {/* ✅ Your real homepage */}
+        <Route path="/landing" element={<Landing />} /> {/* optional */}
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/generator" element={<Generator />} />
+        <Route path="/autogenerator" element={<AutoGenerator />} />
+        <Route path="/aichat" element={<AIChat />} />
+        <Route path="/aiimage" element={<AIImage />} />
+        <Route path="/gallery" element={<Gallery />} /> {/* ✅ new public image gallery */}
+        <Route path="/plans" element={<Plans />} />
+        <Route path="/projects" element={<Projects />} />
+        <Route path="/templates" element={<Templates />} />
+        <Route path="/connect" element={<Connect />} />
+        <Route path="/editor" element={<Editor />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/settings" element={<Settings />} />
+      </Routes>
+    </AnimatePresence>
+  );
+}
 
-              {/* 🌐 Public Pages */}
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              <Route path="/privacy" element={<Privacy />} />
-              <Route path="/terms" element={<Terms />} />
-              <Route path="/support" element={<Support />} />
-            </Routes>
-          </div>
+function App() {
+  return (
+    <SidebarProvider>
+      <Router>
+        <Sidebar />
+        <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] transition-colors duration-300">
+          <Topbar />
+          <AnimatedRoutes />
         </div>
-      </div>
-    </Router>
+      </Router>
+    </SidebarProvider>
   );
 }
 

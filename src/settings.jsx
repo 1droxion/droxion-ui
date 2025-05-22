@@ -1,110 +1,107 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { Settings as SettingsIcon, Bell, Volume2, LogOut } from "lucide-react";
 
 function Settings() {
-  const [systemName, setSystemName] = useState("Droxion");
-  const [defaultLang, setDefaultLang] = useState("Hindi");
-  const [defaultVoice, setDefaultVoice] = useState("onyx");
-  const [defaultStyle, setDefaultStyle] = useState("Cinematic");
-  const [logo, setLogo] = useState(null);
-  const [logoPreview, setLogoPreview] = useState(null);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [toastEnabled, setToastEnabled] = useState(true);
+  const [user, setUser] = useState({ username: "Guest", email: "guest@droxion.com" });
 
-  const handleLogoChange = (e) => {
-    const file = e.target.files[0];
-    setLogo(file);
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setLogoPreview(reader.result);
-      };
-      reader.readAsDataURL(file);
+  useEffect(() => {
+    const soundPref = localStorage.getItem("droxion_sound");
+    const toastPref = localStorage.getItem("droxion_toast");
+    if (soundPref !== null) setSoundEnabled(soundPref === "true");
+    if (toastPref !== null) setToastEnabled(toastPref === "true");
+
+    try {
+      const storedUser = localStorage.getItem("droxion_user");
+      if (storedUser) setUser(JSON.parse(storedUser));
+    } catch (err) {
+      console.warn("⚠️ Invalid user data.");
     }
+  }, []);
+
+  const handleSoundToggle = () => {
+    const newVal = !soundEnabled;
+    setSoundEnabled(newVal);
+    localStorage.setItem("droxion_sound", newVal);
   };
 
-  const handleSave = () => {
-    alert("✅ Settings saved (mock only). Connect to backend later!");
+  const handleToastToggle = () => {
+    const newVal = !toastEnabled;
+    setToastEnabled(newVal);
+    localStorage.setItem("droxion_toast", newVal);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("droxion_user");
+    localStorage.removeItem("droxion_token");
+    window.location.reload();
   };
 
   return (
-    <div className="min-h-screen bg-[#0f172a] text-white p-8">
-      <h1 className="text-3xl font-bold text-green-400 mb-8">⚙️ System Settings</h1>
+    <div className="min-h-screen p-6 text-white bg-[#0f172a]">
+      <h1 className="text-3xl font-bold text-purple-400 mb-6 flex items-center gap-2">
+        <SettingsIcon /> Settings
+      </h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-        {/* Left Settings */}
-        <div className="space-y-6">
-          <div>
-            <label className="block text-sm font-semibold mb-1">📛 System Name</label>
-            <input
-              value={systemName}
-              onChange={(e) => setSystemName(e.target.value)}
-              className="w-full p-3 rounded text-black"
+      <div className="bg-[#111827] rounded-xl p-6 shadow-xl border border-gray-800 space-y-6 max-w-xl">
+        {/* Profile Info */}
+        <div>
+          <h2 className="text-sm text-gray-400 mb-1">👤 Username</h2>
+          <p className="text-lg font-bold">{user.username}</p>
+          <h2 className="text-sm text-gray-400 mt-4 mb-1">📧 Email</h2>
+          <p className="text-md">{user.email}</p>
+        </div>
+
+        {/* Sound Toggle */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Volume2 className="text-green-400" />
+            <span className="text-base">Enable Sound</span>
+          </div>
+          <button
+            onClick={handleSoundToggle}
+            className={`w-14 h-8 flex items-center rounded-full p-1 transition ${
+              soundEnabled ? "bg-green-500" : "bg-gray-600"
+            }`}
+          >
+            <div
+              className={`bg-white w-6 h-6 rounded-full shadow transform transition-transform ${
+                soundEnabled ? "translate-x-6" : "translate-x-0"
+              }`}
             />
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold mb-1">🌐 Default Language</label>
-            <select
-              value={defaultLang}
-              onChange={(e) => setDefaultLang(e.target.value)}
-              className="w-full p-3 rounded text-black"
-            >
-              {["Hindi", "English", "Gujarati"].map((lang) => (
-                <option key={lang} value={lang}>{lang}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold mb-1">🎤 Default Voice</label>
-            <select
-              value={defaultVoice}
-              onChange={(e) => setDefaultVoice(e.target.value)}
-              className="w-full p-3 rounded text-black"
-            >
-              {["onyx", "shimmer", "nova", "echo", "fable"].map((v) => (
-                <option key={v} value={v}>{v}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold mb-1">🎬 Default Style</label>
-            <select
-              value={defaultStyle}
-              onChange={(e) => setDefaultStyle(e.target.value)}
-              className="w-full p-3 rounded text-black"
-            >
-              {["Cinematic", "Emotional", "Funny", "Inspirational", "Aggressive"].map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
-          </div>
+          </button>
         </div>
 
-        {/* Right Panel - Logo Upload */}
-        <div className="space-y-4">
-          <label className="block text-sm font-semibold mb-2">🖼 Upload System Logo</label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleLogoChange}
-            className="block p-2 rounded bg-white text-black w-full"
-          />
-          {logoPreview && (
-            <div className="mt-4">
-              <p className="text-sm mb-2 text-green-300">✅ Preview:</p>
-              <img src={logoPreview} alt="Logo Preview" className="h-32 rounded shadow-lg border border-gray-600" />
-            </div>
-          )}
+        {/* Toast Toggle */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Bell className="text-yellow-400" />
+            <span className="text-base">Enable Toast Alerts</span>
+          </div>
+          <button
+            onClick={handleToastToggle}
+            className={`w-14 h-8 flex items-center rounded-full p-1 transition ${
+              toastEnabled ? "bg-yellow-400" : "bg-gray-600"
+            }`}
+          >
+            <div
+              className={`bg-white w-6 h-6 rounded-full shadow transform transition-transform ${
+                toastEnabled ? "translate-x-6" : "translate-x-0"
+              }`}
+            />
+          </button>
         </div>
-      </div>
 
-      <div className="text-center mt-10">
-        <button
-          onClick={handleSave}
-          className="bg-green-500 hover:bg-green-600 px-8 py-3 rounded font-bold text-lg"
-        >
-          💾 Save Settings
-        </button>
+        {/* Logout */}
+        <div className="pt-4 border-t border-gray-700">
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 text-red-400 hover:text-red-500 transition font-bold"
+          >
+            <LogOut /> Logout
+          </button>
+        </div>
       </div>
     </div>
   );

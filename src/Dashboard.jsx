@@ -1,124 +1,78 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import { BarChart2, Film, Zap } from "lucide-react";
 
+/**
+ * Dashboard
+ * Shows: credits left, videos created this month, current plan.
+ * Fully responsive UI — clean for mobile and desktop.
+ */
 function Dashboard() {
-  const [videos, setVideos] = useState([]);
-  const [filteredVideos, setFilteredVideos] = useState([]);
-  const [search, setSearch] = useState("");
-  const [sortOrder, setSortOrder] = useState("newest");
-  const [filterTopic, setFilterTopic] = useState("All");
+  const [stats, setStats] = useState({
+    credits: 0,
+    videosThisMonth: 0,
+    plan: { name: "Starter", limit: 5 },
+  });
+  const [loading, setLoading] = useState(true);
 
+  // Fetch stats on mount
   useEffect(() => {
-    axios.get("http://localhost:5000/videos")
-      .then((res) => {
-        const data = res.data.reverse();
-        setVideos(data);
-        setFilteredVideos(data);
-      })
-      .catch((err) => console.error("Failed to load videos:", err));
+    const fetchStats = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/user-stats`, {
+          credentials: "include",
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setStats(data);
+        }
+      } catch (err) {
+        console.error("❌ Stats fetch error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
   }, []);
 
-  useEffect(() => {
-    let filtered = [...videos];
-
-    if (filterTopic !== "All") {
-      filtered = filtered.filter((v) =>
-        v.topic.toLowerCase() === filterTopic.toLowerCase()
-      );
-    }
-
-    if (search.trim()) {
-      filtered = filtered.filter((v) =>
-        v.filename.toLowerCase().includes(search.toLowerCase()) ||
-        v.topic.toLowerCase().includes(search.toLowerCase())
-      );
-    }
-
-    if (sortOrder === "oldest") {
-      filtered = filtered.slice().reverse();
-    }
-
-    setFilteredVideos(filtered);
-  }, [search, sortOrder, filterTopic, videos]);
-
-  const deleteVideo = async (filename) => {
-    if (!window.confirm("Delete this video?")) return;
-    await axios.delete(`http://localhost:5000/delete/${filename}`);
-    setVideos(videos.filter((v) => v.filename !== filename));
-  };
-
-  const uniqueTopics = ["All", ...new Set(videos.map((v) => v.topic))];
+  // Card Component
+  const Card = ({ title, value, subtitle, icon }) => (
+    <div className="w-full sm:w-[200px] flex flex-col items-center justify-center bg-[#111827] rounded-2xl p-6 shadow-md border border-gray-800 transition-all hover:scale-[1.03]">
+      {icon}
+      <h2 className="mt-4 text-lg font-semibold text-gray-300">{title}</h2>
+      <p className="mt-1 mb-1 text-4xl font-extrabold text-white">
+        {loading ? "…" : value}
+      </p>
+      <span className="text-sm text-gray-400">{subtitle}</span>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen p-6 text-white">
-      <h1 className="text-3xl font-bold text-green-400 mb-6">📂 Your Generated Reels</h1>
+    <div className="p-4 md:p-6 text-white">
+      <h1 className="text-3xl font-bold mb-6 flex items-center gap-2">
+        <BarChart2 className="text-green-400" /> Dashboard
+      </h1>
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-4 mb-6 items-center">
-        <input
-          type="text"
-          placeholder="🔍 Search by topic or filename..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="bg-gray-800 text-white px-4 py-2 rounded border border-gray-600"
+      <div className="flex flex-wrap gap-6">
+        <Card
+          title="Credits"
+          value={stats.credits}
+          subtitle="Available"
+          icon={<Zap size={36} className="text-green-500" />}
         />
-
-        <select
-          value={sortOrder}
-          onChange={(e) => setSortOrder(e.target.value)}
-          className="bg-gray-800 text-white px-3 py-2 rounded border border-gray-600"
-        >
-          <option value="newest">📅 Newest First</option>
-          <option value="oldest">📆 Oldest First</option>
-        </select>
-
-        <select
-          value={filterTopic}
-          onChange={(e) => setFilterTopic(e.target.value)}
-          className="bg-gray-800 text-white px-3 py-2 rounded border border-gray-600"
-        >
-          {uniqueTopics.map((t, i) => (
-            <option key={i} value={t}>
-              🏷 {t}
-            </option>
-          ))}
-        </select>
+        <Card
+          title="Videos Created"
+          value={stats.videosThisMonth}
+          subtitle="This Month"
+          icon={<Film size={36} className="text-blue-400" />}
+        />
+        <Card
+          title="Plan"
+          value={stats.plan.name}
+          subtitle={`${stats.plan.limit} videos/month`}
+          icon={<BarChart2 size={36} className="text-yellow-400" />}
+        />
       </div>
-
-      {filteredVideos.length === 0 ? (
-        <p className="text-gray-400">No videos match your filters.</p>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredVideos.map((video, index) => (
-            <div key={index} className="bg-[#1e293b] rounded-lg shadow-md p-4 border border-gray-700">
-              <video
-                src={`/${video.filename}`}
-                controls
-                className="w-full h-52 rounded mb-3"
-              />
-              <div className="mb-2">
-                <p className="font-semibold text-lg">🎯 {video.topic}</p>
-                <p className="text-sm text-gray-400">📅 {video.date}</p>
-              </div>
-              <div className="flex justify-between gap-2">
-                <a
-                  href={`/${video.filename}`}
-                  download
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-sm text-white py-1 rounded text-center"
-                >
-                  ⬇️ Download
-                </a>
-                <button
-                  onClick={() => deleteVideo(video.filename)}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-sm text-white py-1 rounded"
-                >
-                  ❌ Delete
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

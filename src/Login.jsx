@@ -1,62 +1,72 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 function Login() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleLogin = (e) => {
     e.preventDefault();
 
-    if (!email || !password) {
-      alert("Please enter both email and password.");
-      return;
-    }
-
-    // 💡 Fake login logic (replace with real API call)
-    if (email === "admin@droxion.com" && password === "droxion123") {
-      localStorage.setItem("droxion_user", JSON.stringify({ username: "Admin", email }));
-      navigate("/dashboard"); // Redirect after login
+    // Dummy auth logic
+    if (email && password) {
+      const user = {
+        username: email.split("@")[0],
+        email,
+        credits: 10,
+      };
+      localStorage.setItem("droxion_user", JSON.stringify(user));
+      navigate("/dashboard");
     } else {
-      alert("Invalid credentials");
+      alert("Please enter valid credentials.");
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0b1120] text-white">
-      <div className="bg-gray-900 p-8 rounded-lg shadow-md w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-6 text-center">🔐 Login</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block mb-1">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-2 rounded text-black"
-            />
-          </div>
-          <div className="mb-6">
-            <label className="block mb-1">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-2 rounded text-black"
-            />
-          </div>
+    <div className="flex justify-center items-center min-h-screen bg-[#0b1120]">
+      <div className="bg-[#111827] p-8 rounded shadow-lg w-full max-w-sm text-white border border-gray-700">
+        <h2 className="text-xl font-bold text-center mb-6">🔐 Login</h2>
+
+        <form onSubmit={handleLogin}>
+          <label className="block mb-2 text-sm font-medium">Email</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full p-2 mb-4 rounded bg-gray-800 text-white border border-gray-600 outline-none"
+            required
+          />
+
+          <label className="block mb-2 text-sm font-medium">Password</label>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full p-2 mb-6 rounded bg-gray-800 text-white border border-gray-600 outline-none"
+            required
+          />
+
           <button
             type="submit"
-            className="w-full bg-green-500 py-2 rounded hover:bg-green-600"
+            className="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded font-semibold"
           >
             Login
           </button>
         </form>
 
-        <p className="text-sm text-center text-gray-400 mt-4">
-          Forgot password? <span className="underline cursor-pointer">Contact Support</span>
-        </p>
+        <div className="text-sm mt-4 text-center">
+          <Link to="/signup" className="text-blue-400 hover:underline">
+            ➕ Create an account
+          </Link>
+        </div>
+
+        <div className="text-xs mt-2 text-center text-gray-400">
+          Forgot password?{" "}
+          <a href="mailto:support@droxion.com" className="text-blue-400 hover:underline">
+            Contact Support
+          </a>
+        </div>
       </div>
     </div>
   );

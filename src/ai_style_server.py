@@ -5,7 +5,9 @@ import base64
 from datetime import datetime
 
 app = Flask(__name__)
-CORS(app)
+
+# ✅ Properly enable CORS for all origins and preflight requests
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
 UPLOAD_FOLDER = "uploads"
 if not os.path.exists(UPLOAD_FOLDER):
@@ -24,19 +26,22 @@ def transform_image():
         # Decode base64 image
         image_bytes = base64.b64decode(image_data.split(",")[-1])
 
-        # Save original image for reference
+        # Save uploaded image with timestamp
         filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{style}.png"
         filepath = os.path.join(UPLOAD_FOLDER, filename)
         with open(filepath, "wb") as f:
             f.write(image_bytes)
 
-        # Placeholder: In real use, send to AI model or Replicate API
-        result_url = f"http://localhost:5000/static/{filename}"
+        # Placeholder result URL (in real use, this should be the output image from the AI model)
+        result_url = f"http://localhost:5000/uploads/{filename}"
 
-        return jsonify({"result_url": result_url})
-
+        return jsonify({"result": result_url})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route("/uploads/<filename>")
+def serve_uploaded_image(filename):
+    return app.send_static_file(os.path.join("uploads", filename))
+
 if __name__ == "__main__":
-    app.run(port=5000)
+    app.run(debug=True, port=5000)

@@ -1,75 +1,75 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 function Signup() {
+  const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSignup = (e) => {
     e.preventDefault();
 
-    if (!name || !email || !password) {
-      alert("All fields are required.");
-      return;
+    if (name && email && password) {
+      const user = {
+        username: name,
+        email,
+        credits: 10,
+      };
+      localStorage.setItem("droxion_user", JSON.stringify(user));
+      navigate("/dashboard");
+    } else {
+      alert("Please fill all fields.");
     }
-
-    // 🔐 Fake save to localStorage
-    localStorage.setItem(
-      "droxion_user",
-      JSON.stringify({ username: name, email })
-    );
-
-    alert("✅ Account created successfully!");
-    navigate("/dashboard"); // auto-login and redirect
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0b1120] text-white">
-      <div className="bg-gray-900 p-8 rounded-lg shadow-md w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-6 text-center">📝 Sign Up</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block mb-1">Name</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full p-2 rounded text-black"
-              placeholder="Your full name"
-            />
-          </div>
-          <div className="mb-4">
-            <label className="block mb-1">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-2 rounded text-black"
-              placeholder="example@droxion.com"
-            />
-          </div>
-          <div className="mb-6">
-            <label className="block mb-1">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-2 rounded text-black"
-              placeholder="Create a strong password"
-            />
-          </div>
+    <div className="flex justify-center items-center min-h-screen bg-[#0b1120]">
+      <div className="bg-[#111827] p-8 rounded shadow-lg w-full max-w-sm text-white border border-gray-700">
+        <h2 className="text-xl font-bold text-center mb-6">🧾 Create Account</h2>
+
+        <form onSubmit={handleSignup}>
+          <label className="block mb-2 text-sm font-medium">Full Name</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full p-2 mb-4 rounded bg-gray-800 text-white border border-gray-600 outline-none"
+            required
+          />
+
+          <label className="block mb-2 text-sm font-medium">Email</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full p-2 mb-4 rounded bg-gray-800 text-white border border-gray-600 outline-none"
+            required
+          />
+
+          <label className="block mb-2 text-sm font-medium">Password</label>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full p-2 mb-6 rounded bg-gray-800 text-white border border-gray-600 outline-none"
+            required
+          />
+
           <button
             type="submit"
-            className="w-full bg-green-500 py-2 rounded hover:bg-green-600"
+            className="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded font-semibold"
           >
-            Create Account
+            Sign Up
           </button>
         </form>
-        <p className="text-sm text-center text-gray-400 mt-4">
-          Already have an account? <span className="underline cursor-pointer" onClick={() => navigate("/login")}>Login</span>
-        </p>
+
+        <div className="text-sm mt-4 text-center">
+          Already have an account?{" "}
+          <Link to="/login" className="text-blue-400 hover:underline">
+            Login here
+          </Link>
+        </div>
       </div>
     </div>
   );
