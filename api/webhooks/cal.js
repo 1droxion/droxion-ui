@@ -1,35 +1,35 @@
-import { config as dbConfig, error, json, parsePayload, signedBody, text, verifyCal } from "../../lib/server.js";
+import { config as dbClient, text, verifyCal } from "../../lib/server.js";
+const reply = (status, obj) => Response.json(obj, { status, headers: { "Cache-Control": "no-store" } });
 
-export const config = { api: { bodyParser: false } };
-export default async function handler(req, res) {
-  if (req.method !== "POST") return json(res, 405, { error: "Method not allowed." });
-  let original;
-  try { original = await signedBody(req); } catch { return json(res, 400, { error: "Invalid body." }); }
-  if (!verifyCal(original, req.headers["x-cal-signature-256"], process.env.CAL_WEBHOOK_SECRET))
-    return json(res, 401, { error: "Invalid signature." });
-  let input;
-  try { input = JSON.parse(original); } catch { return json(res, 400, { error: "Invalid payload." }); }
-  const trigger = input?.triggerEvent, p = input?.payload;
-  if (!["BOOKING_CREATED","BOOKING_RESCHEDULED","BOOKING_CANCELLED"].includes(trigger) || !p)
-    return json(res, 200, { ok: true });
-  const id = p.uid, eventId = p.eventTypeId ?? p.eventType?.id;
-  if (typeof id !== "string" || !Number.isSafeInteger(Number(eventId))) return json(res, 200, { ok:true });
+export async function POST(request) {
+  if (!process.env.CAL_WEBHOOK_SECRET) return reply(503, { error: "Webhook not configured." });
+  let raw;
+  try { raw = await request.text(); } catch { return reply(400, { error: "Invalid request body." }); }
+  if (!verifyCal(raw,request.headers.get("x-cal-signature-256"),process.env.CAL_WEBHOOK_SECRET))
+    return reply(401, { error: "Invalid signature." });
+  let payload;
+  try { payload = JSON.parse(raw); } catch { return reply(400, { error: "Invalid payload." }); }
+  const event = payload.triggerEvent,p = payload.payload;
+  if (!["BOOKING_CREATED","BOOKING_RESCHEDULED","BOOKING_CANCELLED"].includes(event) || !p)
+    return reply(200, { ok:true });
+  const uid = p.uid, typeId = Number(p.eventTypeId ?? p.eventType?.id);
+  if (typeof uid !== "string" || uid.length > 255 || !Number.isSafeInteger(typeId))
+    return reply(200, { ok:true });
   try {
-    const db = dbConfig();
-    const { data: business, error: findError } = await db.from("businesses")
-      .select("id").eq("cal_event_type_id", Number(eventId)).maybeSingle();
-    if (findError) throw findError;
-    if (!business) return json(res, 200, { ok:true });
-    const attendee = p.attendees?.[0] || {};
-    const row = {
-      business_id: business.id, cal_booking_uid: id,
-      customer_name: text(attendee.name, 160) || "Customer",
-      starts_at: p.startTime || p.start || null,
-      status: trigger === "BOOKING_CANCELLED" ? "cancelled" : "confirmed",
-    };
-    if (!row.starts_at || Number.isNaN(Date.parse(row.starts_at))) return json(res, 200, { ok:true });
-    const { error: saveError } = await db.from("appointments").upsert(row, { onConflict:"cal_booking_uid" });
+    const db = dbClient();
+    const { data: business, error: lookupError } = await db.from("businesses")
+      .select("id").eq("cal_event_type_id",typeId).maybeSingle();
+    if (lookupError) throw lookupError;
+    if (!business) return reply(200, { ok:true });
+    const starts = p.startTime || p.start || null;
+    if (!starts || Number.isNaN(Date.parse(starts))) return reply(200, { ok:true });
+    const { error: saveError } = await db.from("appointments").upsert({
+      business_id:business.id,cal_booking_uid:uid,
+      customer_name:text(p.attendees?.[0]?.name,160)||"Customer",
+      starts_at:starts,
+      status:event==="BOOKING_CANCELLED"?"cancelled":"confirmed",
+    }, { onConflict:"cal_booking_uid" });
     if (saveError) throw saveError;
-    return json(res, 200, { ok:true });
-  } catch (e) { return error(res, e); }
+    return reply(200, { ok:true });
+  } catch(err) {console.error("Cal webhook storage error",err?.message);return reply(500,{error:"Storage failed."});}
 }
