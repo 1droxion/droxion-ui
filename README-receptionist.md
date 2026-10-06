@@ -16,6 +16,7 @@ This is a **pivot in progress** built from the original droxion-ui repository, N
 - In Supabase businesses, link the *correct verified owner ID* with the corresponding \`retell_agent_id\`, and add the actual business phone number. Never give shared agents to multiple businesses.
 - Create a dedicated Cal.com event type for each business, connect it to Retell's booking tools and calendar, and link \`cal_event_type_id\` in Supabase.
 - Set \`CAL_WEBHOOK_SECRET\` (nonempty strong random value). Configure a standard Cal.com webhook signed with that secret for BOOKING_CREATED/RESCHEDULED/CANCELLED, targeting \`https://YOUR_DOMAIN/api/webhooks/cal\`. Avoid custom payload templates until validated.
+- Use an API key authorized for Retell webhook verification. Signed webhooks must reach the original unparsed request body. Test delivery on the actual production hosting environment before activation.
 - Test incoming calls and one booked, rescheduled and canceled appointment per business; ensure call recording consent notices, privacy policy, staff notification, opt-outs, and handoff rules are verified.
 - Dashboard shows up to 100 recent call records and up to 100 appointments; counts are NOT all-time totals. Do not claim all-time stats.
 

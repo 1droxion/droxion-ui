@@ -1,10 +1,14 @@
-import { config, error, json, parsePayload, rawBody, text, verifyCal } from "../../lib/server.js";
+import { config, error, json, parsePayload, signedBody, text, verifyCal } from "../../lib/server.js";
 
+export const config = { api: { bodyParser: false } };
 export default async function handler(req, res) {
   if (req.method !== "POST") return json(res, 405, { error: "Method not allowed." });
-  if (!verifyCal(rawBody(req), req.headers["x-cal-signature-256"], process.env.CAL_WEBHOOK_SECRET))
+  let original;
+  try { original = await signedBody(req); } catch { return json(res, 400, { error: "Invalid body." }); }
+  if (!verifyCal(original, req.headers["x-cal-signature-256"], process.env.CAL_WEBHOOK_SECRET))
     return json(res, 401, { error: "Invalid signature." });
-  const input = parsePayload(req);
+  let input;
+  try { input = JSON.parse(original); } catch { return json(res, 400, { error: "Invalid payload." }); }
   const trigger = input?.triggerEvent, p = input?.payload;
   if (!["BOOKING_CREATED","BOOKING_RESCHEDULED","BOOKING_CANCELLED"].includes(trigger) || !p)
     return json(res, 200, { ok: true });

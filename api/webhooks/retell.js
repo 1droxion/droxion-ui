@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { config, error, json, parsePayload, rawBody, text } from "../../lib/server.js";
+import { config, error, json, parsePayload, signedBody, text } from "../../lib/server.js";
 
 // Verify Retell's timestamped HMAC over raw payload+timestamp.
 export function verifyRetell(body, signature, secret, now = Date.now()) {
@@ -13,12 +13,16 @@ export function verifyRetell(body, signature, secret, now = Date.now()) {
   return a.length === b.length && timingSafeEqual(a,b);
 }
 
+export const config = { api: { bodyParser: false } };
 export default async function handler(req, res) {
   if (req.method !== "POST") return json(res, 405, { error: "Method not allowed." });
   if (!process.env.RETELL_API_KEY) return json(res, 503, { error: "Webhook not configured." });
-  if (!verifyRetell(rawBody(req), req.headers["x-retell-signature"], process.env.RETELL_API_KEY))
+  let original;
+  try { original = await signedBody(req); } catch { return json(res, 400, { error: "Invalid body." }); }
+  if (!verifyRetell(original, req.headers["x-retell-signature"], process.env.RETELL_API_KEY))
     return json(res, 401, { error: "Invalid signature." });
-  const body = parsePayload(req);
+  let body;
+  try { body = JSON.parse(original); } catch { return json(res, 400, { error: "Invalid payload." }); }
   if (!body?.call || body.event !== "call_analyzed") return json(res, 200, { ok: true });
   const call = body.call;
   if (!call.call_id || !call.agent_id) return json(res, 200, { ok: true });
