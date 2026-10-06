@@ -1,4 +1,4 @@
-import { config, error, json, parsePayload, signedBody, text, verifyCal } from "../../lib/server.js";
+import { config as dbConfig, error, json, parsePayload, signedBody, text, verifyCal } from "../../lib/server.js";
 
 export const config = { api: { bodyParser: false } };
 export default async function handler(req, res) {
@@ -15,7 +15,7 @@ export default async function handler(req, res) {
   const id = p.uid, eventId = p.eventTypeId ?? p.eventType?.id;
   if (typeof id !== "string" || !Number.isSafeInteger(Number(eventId))) return json(res, 200, { ok:true });
   try {
-    const db = config();
+    const db = dbConfig();
     const { data: business, error: findError } = await db.from("businesses")
       .select("id").eq("cal_event_type_id", Number(eventId)).maybeSingle();
     if (findError) throw findError;

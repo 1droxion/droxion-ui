@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { config, error, json, parsePayload, signedBody, text } from "../../lib/server.js";
+import { config as dbConfig, error, json, parsePayload, signedBody, text } from "../../lib/server.js";
 
 // Verify Retell's timestamped HMAC over raw payload+timestamp.
 export function verifyRetell(body, signature, secret, now = Date.now()) {
@@ -27,7 +27,7 @@ export default async function handler(req, res) {
   const call = body.call;
   if (!call.call_id || !call.agent_id) return json(res, 200, { ok: true });
   try {
-    const db = config();
+    const db = dbConfig();
     const { data: business, error: findError } = await db.from("businesses")
       .select("id").eq("retell_agent_id", call.agent_id).maybeSingle();
     if (findError) throw findError;
