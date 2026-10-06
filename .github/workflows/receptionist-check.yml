@@ -1,0 +1,21 @@
+name: Receptionist MVP checks
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [pivot/ai-receptionist-mvp-20261006]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --ignore-scripts --no-audit --no-fund
+      - run: npm test
+      - run: npm run build
