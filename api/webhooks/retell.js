@@ -16,21 +16,20 @@ export function verifyRetell(body, signature, secret, now = Date.now()) {
 
 // Native Vercel Web Request retains original bytes for signature verification.
 export async function POST(request) {
-  if (!process.env.RETELL_API_KEY) return reply(503, { error: "Webhook not configured." });
+  if (!process.env.RETELL_API_KEY) { console.error("[Retell webhook] RETELL_API_KEY missing"); return reply(503, { error: "Webhook not configured." }); }
   let raw;
   try { raw = await request.text(); } catch { return reply(400, { error: "Invalid request body." }); }
-  if (!verifyRetell(raw, request.headers.get("x-retell-signature"), process.env.RETELL_API_KEY))
-    return reply(401, { error: "Invalid signature." });
+  if (!verifyRetell(raw, request.headers.get("x-retell-signature"), process.env.RETELL_API_KEY)) { console.error("[Retell webhook] Invalid signature"); return reply(401, { error: "Invalid signature." }); }
   let payload;
   try { payload = JSON.parse(raw); } catch { return reply(400, { error: "Invalid payload." }); }
-  if (payload.event !== "call_analyzed" || !payload.call?.agent_id || !payload.call?.call_id)
-    return reply(200, { ok: true });
+  if (payload.event !== "call_analyzed" || !payload.call?.agent_id || !payload.call?.call_id) { console.log("[Retell webhook] Ignored event", payload.event || "unknown"); return reply(200, { ok: true }); }
+  console.log("[Retell webhook] call_analyzed received", { agent_id: payload.call.agent_id, call_id: payload.call.call_id });
   try {
     const call = payload.call, db = dbClient();
     const { data: business, error: lookupError } = await db.from("businesses")
       .select("id").eq("retell_agent_id",call.agent_id).maybeSingle();
     if (lookupError) throw lookupError;
-    if (!business) return reply(200, { ok: true });
+    if (!business) { console.error("[Retell webhook] No business linked for agent", call.agent_id); return reply(200, { ok: true }); }
     const ts = call.start_timestamp;
     const started = typeof ts === "number" && Number.isFinite(ts) && ts > 0 ? new Date(ts).toISOString() : null;
     const duration = Number.isFinite(call.duration_ms) ? call.duration_ms / 1000 :
@@ -42,6 +41,7 @@ export async function POST(request) {
       summary:text(call.call_analysis?.call_summary,3000),
     }, { onConflict:"retell_call_id" });
     if (saveError) throw saveError;
+    console.log("[Retell webhook] Call saved", call.call_id);
     return reply(200, { ok: true });
   } catch (err) {
     console.error("Retell webhook storage error",err?.message);
