@@ -28,5 +28,22 @@ export default async function handler(req, res) {
     if (insertError) throw insertError;
     // The database is the authoritative sales inbox. Never falsely claim an email was sent.
     return json(res, 200, { ok: true });
-  } catch (e) { return error(res, e); }
+  } catch (e) {
+    if (/fetch failed|could not connect/i.test(String(e?.message || ""))) {
+      const target = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+      try {
+        const host = new URL(target).hostname;
+        const { lookup } = await import("node:dns/promises");
+        try {
+          await lookup(host);
+          console.error("[Droxion connectivity diagnostic]", { host, dns: "resolved", supabaseErrorCode: e?.code || "unknown" });
+        } catch (dnsError) {
+          console.error("[Droxion connectivity diagnostic]", { host, dns: dnsError?.code || "failed" });
+        }
+      } catch {
+        console.error("[Droxion connectivity diagnostic] Invalid or missing Supabase URL");
+      }
+    }
+    return error(res, e);
+  }
 }
