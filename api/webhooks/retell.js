@@ -1,17 +1,15 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { Retell } from "retell-sdk";
 import { config as dbClient, text } from "../../lib/server.js";
 
 const reply = (status, obj) => Response.json(obj, { status, headers: { "Cache-Control": "no-store" } });
 
-export function verifyRetell(body, signature, secret, now = Date.now()) {
+export async function verifyRetell(body, signature, secret) {
   if (!secret || typeof signature !== "string" || typeof body !== "string") return false;
-  const match = /^v=(\d+),d=([a-f0-9]{64})$/i.exec(signature);
-  if (!match) return false;
-  const [, timestamp, digest] = match;
-  if (Math.abs(now - Number(timestamp)) > 300000) return false;
-  const expected = createHmac("sha256", secret).update(body + timestamp).digest("hex");
-  const a = Buffer.from(expected, "hex"), b = Buffer.from(digest, "hex");
-  return a.length === b.length && timingSafeEqual(a,b);
+  try {
+    return await Retell.verify(body, secret, signature);
+  } catch {
+    return false;
+  }
 }
 
 // Native Vercel Web Request retains original bytes for signature verification.
@@ -19,7 +17,7 @@ export async function POST(request) {
   if (!process.env.RETELL_API_KEY) { console.error("[Retell webhook] RETELL_API_KEY missing"); return reply(503, { error: "Webhook not configured." }); }
   let raw;
   try { raw = await request.text(); } catch { return reply(400, { error: "Invalid request body." }); }
-  if (!verifyRetell(raw, request.headers.get("x-retell-signature"), process.env.RETELL_API_KEY)) { console.error("[Retell webhook] Invalid signature"); return reply(401, { error: "Invalid signature." }); }
+  if (!(await verifyRetell(raw, request.headers.get("x-retell-signature"), process.env.RETELL_API_KEY))) { console.error("[Retell webhook] Invalid signature"); return reply(401, { error: "Invalid signature." }); }
   let payload;
   try { payload = JSON.parse(raw); } catch { return reply(400, { error: "Invalid payload." }); }
   if (payload.event !== "call_analyzed" || !payload.call?.agent_id || !payload.call?.call_id) { console.log("[Retell webhook] Ignored event", payload.event || "unknown"); return reply(200, { ok: true }); }
