@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { BrowserRouter, Link, Route, Routes, useNavigate } from "react-router-dom";
 import { createClient } from "@supabase/supabase-js";
+import { normalizeSupabaseUrl } from "../lib/supabase-url.js";
 import {
   ArrowRight, BellRing, CalendarDays, Check, CheckCircle2, Clock3, Headphones,
   LogOut, Menu, Phone, PhoneCall, PhoneMissed, ShieldCheck, Sparkles, TrendingUp, X,
@@ -9,7 +10,12 @@ import "./receptionist.css";
 
 const URL = import.meta.env.VITE_SUPABASE_URL;
 const KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const supabase = URL && KEY ? createClient(URL, KEY) : null;
+let supabase = null;
+try {
+  if (URL && KEY) supabase = createClient(normalizeSupabaseUrl(URL), KEY);
+} catch (err) {
+  console.error("[Droxion] Invalid public Supabase Project URL configuration.");
+}
 const CONTACT_EMAIL = "patelsuchitbhai@gmail.com";
 const fields = [
   { key: "contact_name", label: "Your name", placeholder: "Alex Smith", required: true },
